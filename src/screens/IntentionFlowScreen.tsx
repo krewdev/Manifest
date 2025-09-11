@@ -31,8 +31,14 @@ export const IntentionFlowScreen: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
       const payload = { owner_id: user.id, title, description, status: 'active' };
-      const { error } = await supabase.from('intentions').insert(payload);
+      const { data, error } = await supabase.from('intentions').insert(payload).select('id').single();
       if (error) throw error;
+      // Call matcher
+      fetch('/api/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intentionId: data.id, title, description }),
+      }).catch(() => {});
       Alert.alert('Saved', 'Your intention is set.');
       setStep(0);
       setTitle('');
