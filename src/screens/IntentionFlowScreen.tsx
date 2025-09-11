@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme/theme';
+import { useAppState } from '../state/appState';
 import { supabase } from '../lib/supabase';
 
 export const IntentionFlowScreen: React.FC = () => {
+  const { setGroupId } = useAppState();
   const [step, setStep] = useState<number>(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -38,7 +40,10 @@ export const IntentionFlowScreen: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ intentionId: data.id, title, description }),
-      }).catch(() => {});
+      })
+        .then(r => r.json())
+        .then(resp => { if (resp?.groupId) setGroupId(resp.groupId); })
+        .catch(() => {});
       Alert.alert('Saved', 'Your intention is set.');
       setStep(0);
       setTitle('');

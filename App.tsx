@@ -8,9 +8,11 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import IntentionFlowScreen from './src/screens/IntentionFlowScreen';
 import SixHourPrompt from './src/components/SixHourPrompt';
 import GroupPresence from './src/components/GroupPresence';
+import { AppStateProvider, useAppState } from './src/state/appState';
+import TimelineScreen from './src/screens/TimelineScreen';
 import { theme } from './src/theme/theme';
 
-export default function App() {
+function AuthedApp() {
   const [isAuthed, setIsAuthed] = useState<boolean>(false);
   const [ready, setReady] = useState<boolean>(false);
 
@@ -44,12 +46,26 @@ export default function App() {
       <View style={{ flex: 1, alignSelf: 'stretch' }}>
         <ProfileScreen />
         <IntentionFlowScreen />
+        <TimelineScreen />
       </View>
-      {/* Placeholder groupId until grouping is persisted */}
-      <GroupPresence groupId="demo-group" />
+      <WithGroupPresence />
       <SixHourPrompt />
       <StatusBar style="light" />
     </LinearGradient>
+  );
+}
+
+const WithGroupPresence = () => {
+  const { groupId } = useAppState();
+  if (!groupId) return null;
+  return <GroupPresence groupId={groupId} />;
+};
+
+export default function App() {
+  return (
+    <AppStateProvider>
+      <AuthedApp />
+    </AppStateProvider>
   );
 }
 
