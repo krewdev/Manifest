@@ -1,15 +1,46 @@
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { supabase } from './src/lib/supabase';
+import AuthScreen from './src/screens/AuthScreen';
 import { theme } from './src/theme/theme';
 
 export default function App() {
+  const [isAuthed, setIsAuthed] = useState<boolean>(false);
+  const [ready, setReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setIsAuthed(!!data.session);
+      setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session);
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!ready) {
+    return (
+      <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
+        <StatusBar style="light" />
+      </LinearGradient>
+    );
+  }
+
+  if (!isAuthed) {
+    return <AuthScreen />;
+  }
+
   return (
     <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
       <View style={styles.logoWrap}>
         <Image source={require('./assets/brand/icon.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>Manifest</Text>
-        <Text style={styles.tagline}>metaphysical • focused • collective</Text>
+        <Text style={styles.title}>Welcome</Text>
+        <Text style={styles.tagline}>You are signed in.</Text>
       </View>
       <StatusBar style="light" />
     </LinearGradient>
