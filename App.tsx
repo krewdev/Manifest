@@ -7,6 +7,7 @@ import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import IntentionFlowScreen from './src/screens/IntentionFlowScreen';
 import SixHourPrompt from './src/components/SixHourPrompt';
+import GroupPresence from './src/components/GroupPresence';
 import { theme } from './src/theme/theme';
 
 export default function App() {
@@ -44,6 +45,8 @@ export default function App() {
         <ProfileScreen />
         <IntentionFlowScreen />
       </View>
+      {/* Placeholder groupId until grouping is persisted */}
+      <GroupPresence groupId="demo-group" />
       <SixHourPrompt />
       <StatusBar style="light" />
     </LinearGradient>
