@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from './src/lib/supabase';
 import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import IntentionFlowScreen from './src/screens/IntentionFlowScreen';
 import { theme } from './src/theme/theme';
 
 export default function App() {
@@ -38,7 +39,10 @@ export default function App() {
 
   return (
     <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
-      <ProfileScreen />
+      <View style={{ flex: 1, alignSelf: 'stretch' }}>
+        <ProfileScreen />
+        <IntentionFlowScreen />
+      </View>
       <StatusBar style="light" />
     </LinearGradient>
   );
