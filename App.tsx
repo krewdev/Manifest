@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from './src/lib/supabase';
 import AuthScreen from './src/screens/AuthScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import { theme } from './src/theme/theme';
 
 export default function App() {
@@ -37,11 +38,7 @@ export default function App() {
 
   return (
     <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
-      <View style={styles.logoWrap}>
-        <Image source={require('./assets/brand/icon.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>Welcome</Text>
-        <Text style={styles.tagline}>You are signed in.</Text>
-      </View>
+      <ProfileScreen />
       <StatusBar style="light" />
     </LinearGradient>
   );
