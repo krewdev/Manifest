@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
 import { theme } from '../theme/theme';
+import MagicButton from '../components/MagicButton';
 
 export const AuthScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +13,16 @@ export const AuthScreen: React.FC = () => {
   const signInWithMagicLink = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: Platform.select({ web: window.location.origin, default: undefined }) } });
+      const redirectTo = Platform.select({ web: window.location.origin, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
+      // eslint-disable-next-line no-console
+      console.log('Magic link redirectTo:', redirectTo);
+      let { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+      // Fallback: if redirect is not allowlisted, retry without redirect so email still sends
+      if (error && (error.status === 422 || String(error.message || '').toLowerCase().includes('redirect'))) {
+        // eslint-disable-next-line no-console
+        console.warn('Retrying magic link without redirectTo (not allowlisted yet).');
+        ({ error } = await supabase.auth.signInWithOtp({ email }));
+      }
       if (error) throw error;
       Alert.alert('Check your email', 'We sent you a magic link to sign in.');
     } catch (err: any) {
@@ -23,7 +35,8 @@ export const AuthScreen: React.FC = () => {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: Platform.select({ web: window.location.origin, default: undefined }) } });
+      const redirectTo = Platform.select({ web: window.location.origin, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
+      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
       if (error) throw error;
       if (!data?.url && Platform.OS === 'web') Alert.alert('Redirect', 'Continue in the opened tab to finish sign-in.');
     } catch (err: any) {
@@ -48,13 +61,12 @@ export const AuthScreen: React.FC = () => {
         style={styles.input}
       />
 
-      <TouchableOpacity style={styles.button} onPress={signInWithMagicLink} disabled={loading || !email}>
-        <Text style={styles.buttonText}>{loading ? 'Sending…' : 'Send magic link'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.button, styles.google]} onPress={signInWithGoogle} disabled={loading}>
-        <Text style={styles.buttonText}>Continue with Google</Text>
-      </TouchableOpacity>
+      <View style={{ marginTop: 12 }}>
+        <MagicButton title={loading ? 'Sending…' : 'Send magic link'} onPress={signInWithMagicLink} disabled={loading || !email} />
+      </View>
+      <View style={{ marginTop: 12 }}>
+        <MagicButton title="Continue with Google" onPress={signInWithGoogle} disabled={loading} />
+      </View>
     </View>
   );
 };

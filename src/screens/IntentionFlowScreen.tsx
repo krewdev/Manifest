@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme/theme';
 import { useAppState } from '../state/appState';
 import { supabase } from '../lib/supabase';
+import MagicButton from '../components/MagicButton';
 
 export const IntentionFlowScreen: React.FC = () => {
   const { setGroupId } = useAppState();
   const [step, setStep] = useState<number>(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
   const steps = [
     {
       title: 'Center your breath',
@@ -30,16 +32,19 @@ export const IntentionFlowScreen: React.FC = () => {
 
   const saveIntention = async () => {
     try {
+      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      const payload = { owner_id: user.id, title, description, status: 'active' };
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) throw new Error('Please enter a title');
+      const payload = { owner_id: user.id, title: trimmedTitle, description: description.trim() || null, status: 'active' };
       const { data, error } = await supabase.from('intentions').insert(payload).select('id').single();
       if (error) throw error;
       // Call matcher
       fetch('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ intentionId: data.id, title, description }),
+        body: JSON.stringify({ intentionId: data.id, title: trimmedTitle, description: payload.description ?? '' }),
       })
         .then(r => r.json())
         .then(resp => { if (resp?.groupId) setGroupId(resp.groupId); })
@@ -50,7 +55,7 @@ export const IntentionFlowScreen: React.FC = () => {
       setDescription('');
     } catch (e: any) {
       Alert.alert('Error', e?.message ?? 'Unknown error');
-    }
+    } finally { setSaving(false); }
   };
 
   return (
@@ -64,12 +69,13 @@ export const IntentionFlowScreen: React.FC = () => {
             <TextInput value={description} onChangeText={setDescription} placeholder="One-line description (optional)" placeholderTextColor="#9aa" style={styles.input} />
           </>
         )}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => (step < steps.length - 1 ? setStep(step + 1) : saveIntention())}
-        >
-          <Text style={styles.buttonText}>{steps[step].cta}</Text>
-        </TouchableOpacity>
+        <View style={{ marginTop: 12 }}>
+          <MagicButton
+            title={saving ? 'Saving…' : steps[step].cta}
+            onPress={() => (step < steps.length - 1 ? setStep(step + 1) : saveIntention())}
+            disabled={saving}
+          />
+        </View>
       </View>
     </LinearGradient>
   );

@@ -46,20 +46,48 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const chooseAvatar = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Permission', 'Media permissions are required');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.9 });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const path = `avatars/${user.id}.jpg`;
-    const response = await fetch(asset.uri);
-    const blob = await response.blob();
-    const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (upErr) return Alert.alert('Upload error', upErr.message);
-    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-    setProfile(p => p ? { ...p, avatar_url: pub.publicUrl } : p);
+    try {
+      setLoading(true);
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission', 'Media permissions are required');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.9 });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      // Derive extension and content type
+      const guessedType = (asset as any).mimeType || (asset as any).type || 'image/jpeg';
+      const ext = (asset.fileName?.split('.').pop()?.toLowerCase()) || (guessedType.includes('png') ? 'png' : 'jpg');
+      const path = `avatars/${user.id}.${ext}`;
+
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: guessedType });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+
+      // Persist to profile immediately
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .upsert({ id: user.id, avatar_url: pub.publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (profErr) throw profErr;
+
+      // Bust cache so the new image shows immediately
+      const cacheBusted = `${pub.publicUrl}?t=${Date.now()}`;
+      setProfile(p => p ? { ...p, avatar_url: cacheBusted } : p);
+      Alert.alert('Updated', 'Profile photo updated');
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.error('Avatar upload error', e);
+      Alert.alert('Upload error', e?.message ?? 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!profile) {
