@@ -13,15 +13,21 @@ export const AuthScreen: React.FC = () => {
   const signInWithMagicLink = async () => {
     try {
       setLoading(true);
+      const trimmed = email.trim();
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+      if (!ok) {
+        Alert.alert('Invalid email', 'Please enter a valid email address.');
+        return;
+      }
       const redirectTo = Platform.select({ web: window.location.origin, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
       // eslint-disable-next-line no-console
       console.log('Magic link redirectTo:', redirectTo);
-      let { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: true } });
+      let { error } = await supabase.auth.signInWithOtp({ email: trimmed, options: { emailRedirectTo: redirectTo, shouldCreateUser: true } });
       // Fallback: if redirect is not allowlisted, retry without redirect so email still sends
       if (error && (error.status === 422 || String(error.message || '').toLowerCase().includes('redirect'))) {
         // eslint-disable-next-line no-console
         console.warn('Retrying magic link without redirectTo (not allowlisted yet).');
-        ({ error } = await supabase.auth.signInWithOtp({ email }));
+        ({ error } = await supabase.auth.signInWithOtp({ email: trimmed }));
       }
       if (error) {
         const msg = String(error.message || '').toLowerCase();
