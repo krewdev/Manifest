@@ -1,9 +1,10 @@
 Setup Supabase policies
 
 1) Open Supabase dashboard → SQL Editor
-2) Paste and run the contents of `supabase/policies.sql`
-3) Storage → Create bucket named `avatars` and set it to Public
-4) Auth → URL Configuration
+2) Paste and run the contents of `supabase/schema.sql` (create tables)
+3) Paste and run the contents of `supabase/policies.sql` (enable RLS and policies)
+4) Storage → Create bucket named `avatars` and set it to Public
+5) Auth → URL Configuration
    - Site URL: your deployed URL
    - Redirect URLs: include your deployed URL and localhost
 

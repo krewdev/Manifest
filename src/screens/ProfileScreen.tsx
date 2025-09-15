@@ -79,7 +79,7 @@ export const ProfileScreen: React.FC = () => {
 
       // Bust cache so the new image shows immediately
       const cacheBusted = `${pub.publicUrl}?t=${Date.now()}`;
-      setProfile(p => p ? { ...p, avatar_url: cacheBusted } : p);
+      setProfile((p: Profile | null) => p ? { ...p, avatar_url: cacheBusted } : p);
       Alert.alert('Updated', 'Profile photo updated');
     } catch (e: any) {
       // eslint-disable-next-line no-console
@@ -107,21 +107,21 @@ export const ProfileScreen: React.FC = () => {
 
       <TextInput
         value={profile.display_name ?? ''}
-        onChangeText={t => setProfile({ ...profile, display_name: t })}
+        onChangeText={(t: string) => setProfile({ ...profile, display_name: t })}
         placeholder="Display name"
         placeholderTextColor="#bbb"
         style={styles.input}
       />
       <TextInput
         value={profile.bio ?? ''}
-        onChangeText={t => setProfile({ ...profile, bio: t })}
+        onChangeText={(t: string) => setProfile({ ...profile, bio: t })}
         placeholder="One-line bio"
         placeholderTextColor="#bbb"
         style={styles.input}
       />
       <TextInput
         value={profile.location_general ?? ''}
-        onChangeText={t => setProfile({ ...profile, location_general: t })}
+        onChangeText={(t: string) => setProfile({ ...profile, location_general: t })}
         placeholder="City / Region"
         placeholderTextColor="#bbb"
         style={styles.input}
@@ -129,6 +129,20 @@ export const ProfileScreen: React.FC = () => {
 
       <TouchableOpacity style={styles.button} onPress={save} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? 'Saving…' : 'Save profile'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: '#ff4d4f' }]}
+        onPress={async () => {
+          try {
+            await supabase.auth.signOut();
+            Alert.alert('Signed out');
+          } catch (e: any) {
+            Alert.alert('Sign-out error', e?.message ?? 'Unknown error');
+          }
+        }}
+      >
+        <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>
     </View>
   );
