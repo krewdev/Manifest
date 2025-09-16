@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
-import { supabase } from './src/lib/supabase';
+import { supabase, isSupabaseConfigured } from './src/lib/supabase';
 import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import IntentionFlowScreen from './src/screens/IntentionFlowScreen';
@@ -20,6 +20,10 @@ function AuthedApp() {
   const [justSignedIn, setJustSignedIn] = useState<boolean>(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setReady(true);
+      return;
+    }
     // Handle auth callback from magic link
     const handleAuthCallback = async () => {
       if (typeof window !== 'undefined') {
@@ -137,6 +141,20 @@ function AuthedApp() {
   if (!ready) {
     return (
       <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
+        <StatusBar style="light" />
+      </LinearGradient>
+    );
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <LinearGradient colors={[theme.colors.brandDeep, theme.colors.brandViolet]} style={styles.container}>
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center' }}>Configuration required</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.9)', marginTop: 8, textAlign: 'center' }}>
+            Supabase env vars are missing. Add EXPO_PUBLIC_SUPABASE_URL/ANON_KEY (or NEXT_PUBLIC_/SUPABASE_) in Vercel → Project → Settings → Environment Variables, then redeploy.
+          </Text>
+        </View>
         <StatusBar style="light" />
       </LinearGradient>
     );
