@@ -19,7 +19,8 @@ export const AuthScreen: React.FC = () => {
         Alert.alert('Invalid email', 'Please enter a valid email address.');
         return;
       }
-      const redirectTo = Platform.select({ web: window.location.origin, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
+      const siteUrl = process.env.EXPO_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+      const redirectTo = Platform.select({ web: siteUrl, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
       // eslint-disable-next-line no-console
       console.log('Magic link redirectTo:', redirectTo);
       let { error } = await supabase.auth.signInWithOtp({ email: trimmed, options: { emailRedirectTo: redirectTo, shouldCreateUser: true } });
@@ -53,7 +54,8 @@ export const AuthScreen: React.FC = () => {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const redirectTo = Platform.select({ web: window.location.origin, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
+      const siteUrl = process.env.EXPO_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+      const redirectTo = Platform.select({ web: siteUrl, default: makeRedirectUri({ scheme: 'manifest', path: 'auth-callback' }) });
       const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'oidc', options: { providerId: 'auth0', redirectTo } });
       if (error) throw error;
       if (!data?.url && Platform.OS === 'web') Alert.alert('Redirect', 'Continue in the opened tab to finish sign-in.');
